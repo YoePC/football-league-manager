@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="bi bi-calculator me-2"></i> Funciones del Sistema</h2>
+    
+    <!-- Mensajes flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Función TotalGolesJugador -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Total de Goles por Jugador</h5>
+                </div>
+                <div class="card-body">
+                    <form id="totalGolesForm">
+                        <div class="mb-3">
+                            <label class="form-label">Seleccionar Jugador</label>
+                            <select class="form-select" id="jugadorSelect" required>
+                                <option value="" selected disabled>Seleccione un jugador</option>
+                                {% for jugador in jugadores %}
+                                <option value="{{ jugador.player_id }}">
+                                    {{ jugador.nombre }} {{ jugador.apellido }} (ID: {{ jugador.player_id }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-calculator me-1"></i> Calcular
+                        </button>
+                    </form>
+                    <div id="totalGolesResult" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <h5 class="alert-heading">Resultado</h5>
+                            <div id="totalGolesContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Función PartidosEquipo -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Partidos por Equipo</h5>
+                </div>
+                <div class="card-body">
+                    <form id="partidosEquipoForm">
+                        <div class="mb-3">
+                            <label class="form-label">Seleccionar Equipo</label>
+                            <select class="form-select" id="equipoSelect" required>
+                                <option value="" selected disabled>Seleccione un equipo</option>
+                                {% for equipo in equipos %}
+                                <option value="{{ equipo.team_id }}">
+                                    {{ equipo.nombre }} (ID: {{ equipo.team_id }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-calculator me-1"></i> Calcular
+                        </button>
+                    </form>
+                    <div id="partidosEquipoResult" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <h5 class="alert-heading">Resultado</h5>
+                            <div id="partidosEquipoContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Función JugadoresPosicion -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">Jugadores por Posición</h5>
+                </div>
+                <div class="card-body">
+                    <form id="jugadoresPosicionForm">
+                        <div class="mb-3">
+                            <label class="form-label">Seleccionar Posición</label>
+                            <select class="form-select" id="posicionSelect" required>
+                                <option value="" selected disabled>Seleccione una posición</option>
+                                {% for posicion in posiciones %}
+                                <option value="{{ posicion.nombre }}">
+                                    {{ posicion.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-calculator me-1"></i> Calcular
+                        </button>
+                    </form>
+                    <div id="jugadoresPosicionResult" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <h5 class="alert-heading">Resultado</h5>
+                            <div id="jugadoresPosicionContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Función TopArbitros -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="card-title mb-0">Top Árbitros</h5>
+                </div>
+                <div class="card-body">
+                    <button id="topArbitrosBtn" class="btn btn-danger">
+                        <i class="bi bi-calculator me-1"></i> Mostrar Top Árbitros
+                    </button>
+                    <div id="topArbitrosResult" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <h5 class="alert-heading">Resultado</h5>
+                            <div id="topArbitrosContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Función TotalGolesJugador
+    $('#totalGolesForm').submit(function(e) {
+        e.preventDefault();
+        const playerId = $('#jugadorSelect').val();
+        
+        $.get(`/funcion/total_goles/${playerId}`, function(data) {
+            $('#totalGolesContent').html(`
+                <p>Jugador: <strong>${data.jugador}</strong></p>
+                <p>Total de goles: <span class="badge bg-primary">${data.total_goles}</span></p>
+            `);
+            $('#totalGolesResult').show();
+        }).fail(function() {
+            $('#totalGolesContent').html('<p class="text-danger">Error al ejecutar la función</p>');
+            $('#totalGolesResult').show();
+        });
+    });
+
+    // Función PartidosEquipo
+    $('#partidosEquipoForm').submit(function(e) {
+        e.preventDefault();
+        const teamId = $('#equipoSelect').val();
+        
+        $.get(`/funcion/partidos_equipo/${teamId}`, function(data) {
+            let content = `<p>Equipo: <strong>${data.equipo}</strong></p>`;
+            
+            if (data.partidos.length > 0) {
+                content += `<table class="table table-sm">
+                    <thead><tr><th>ID Partido</th><th>Fecha</th></tr></thead>
+                    <tbody>`;
+                
+                data.partidos.forEach(partido => {
+                    content += `<tr><td>${partido.match_id}</td><td>${partido.fecha}</td></tr>`;
+                });
+                
+                content += `</tbody></table>`;
+            } else {
+                content += `<p>No se encontraron partidos</p>`;
+            }
+            
+            $('#partidosEquipoContent').html(content);
+            $('#partidosEquipoResult').show();
+        }).fail(function() {
+            $('#partidosEquipoContent').html('<p class="text-danger">Error al ejecutar la función</p>');
+            $('#partidosEquipoResult').show();
+        });
+    });
+
+    // Función JugadoresPosicion
+    $('#jugadoresPosicionForm').submit(function(e) {
+        e.preventDefault();
+        const posicion = $('#posicionSelect').val();
+        
+        $.get(`/funcion/jugadores_posicion/${encodeURIComponent(posicion)}`, function(data) {
+            let content = `<p>Posición: <strong>${data.posicion}</strong></p>`;
+            
+            if (data.jugadores.length > 0) {
+                content += `<table class="table table-sm">
+                    <thead><tr><th>Jugador</th><th>Equipo</th></tr></thead>
+                    <tbody>`;
+                
+                data.jugadores.forEach(jugador => {
+                    content += `<tr><td>${jugador.nombre}</td><td>${jugador.equipo}</td></tr>`;
+                });
+                
+                content += `</tbody></table>`;
+            } else {
+                content += `<p>No se encontraron jugadores</p>`;
+            }
+            
+            $('#jugadoresPosicionContent').html(content);
+            $('#jugadoresPosicionResult').show();
+        }).fail(function() {
+            $('#jugadoresPosicionContent').html('<p class="text-danger">Error al ejecutar la función</p>');
+            $('#jugadoresPosicionResult').show();
+        });
+    });
+
+    // Función TopArbitros
+    $('#topArbitrosBtn').click(function() {
+        $.get('/funcion/top_arbitros', function(data) {
+            let content = '';
+            
+            if (data.arbitros.length > 0) {
+                content += `<table class="table table-sm">
+                    <thead><tr><th>Árbitro</th><th>Partidos</th></tr></thead>
+                    <tbody>`;
+                
+                data.arbitros.forEach(arbitro => {
+                    content += `<tr><td>${arbitro.nombre}</td><td>${arbitro.partidos}</td></tr>`;
+                });
+                
+                content += `</tbody></table>`;
+            } else {
+                content += `<p>No se encontraron árbitros</p>`;
+            }
+            
+            $('#topArbitrosContent').html(content);
+            $('#topArbitrosResult').show();
+        }).fail(function() {
+            $('#topArbitrosContent').html('<p class="text-danger">Error al ejecutar la función</p>');
+            $('#topArbitrosResult').show();
+        });
+    });
+});
+</script>
+{% endblock %}

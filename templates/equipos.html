@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="bi bi-people me-2"></i> Gestión de Equipos</h2>
+    
+    <!-- Mensajes flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Formulario para agregar equipo -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Agregar Nuevo Equipo</h5>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('insertar_equipo') }}" method="POST">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="nombre_equipo" class="form-label">Nombre del Equipo</label>
+                        <input type="text" id="nombre_equipo" name="nombre_equipo" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="ciudad_equipo" class="form-label">Ciudad</label>
+                        <input type="text" id="ciudad_equipo" name="ciudad_equipo" class="form-control">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-save me-1"></i> Guardar Equipo
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de equipos -->
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="card-title mb-0">Listado de Equipos</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Ciudad</th>
+                            <th>Administrador</th>
+                            <th>Entrenador</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for equipo in equipos %}
+                        <tr>
+                            <td>{{ equipo.team_id }}</td>
+                            <td>{{ equipo.nombre }}</td>
+                            <td>{{ equipo.ciudad or 'N/A' }}</td>
+                            <td>{{ equipo.admin_nombre or 'N/A' }}</td>
+                            <td>{{ equipo.coach_nombre or 'N/A' }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="#" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ equipo.team_id }}">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form action="{{ url_for('eliminar_equipo') }}" method="POST" style="display:inline;">
+                                        <input type="hidden" name="team_id_delete" value="{{ equipo.team_id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Estás seguro de eliminar este equipo?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">No hay equipos registrados</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modales para edición -->
+{% if equipos %}  <!-- Verificamos que exista la variable -->
+{% for equipo in equipos %}
+<!-- Modal -->
+<div class="modal fade" id="editModal{{ equipo.team_id }}" tabindex="-1" aria-labelledby="editModalLabel{{ equipo.team_id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('actualizar_equipo') }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel{{ equipo.team_id }}">Editar {{ equipo.nombre }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="team_id_update" value="{{ equipo.team_id }}">
+                    <div class="mb-3">
+                        <label for="nombre{{ equipo.team_id }}" class="form-label">Nombre</label>
+                        <input type="text" class="form-control" id="nombre{{ equipo.team_id }}" 
+                               name="nombre_equipo_update" value="{{ equipo.nombre }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ciudad{{ equipo.team_id }}" class="form-label">Ciudad</label>
+                        <input type="text" class="form-control" id="ciudad{{ equipo.team_id }}" 
+                               name="ciudad_equipo_update" value="{{ equipo.ciudad or '' }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Scripts específicos para la página de equipos
+    document.addEventListener('DOMContentLoaded', function() {
+        // Puedes añadir funcionalidad JavaScript aquí si es necesario
+    });
+</script>
+{% endblock %}

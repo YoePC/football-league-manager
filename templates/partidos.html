@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="bi bi-calendar-event me-2"></i> Gestión de Partidos</h2>
+    
+    <!-- Mensajes flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Formulario para nuevo partido -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Programar Nuevo Partido</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('insertar_partido') }}">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Fecha y Hora</label>
+                        <input type="datetime-local" name="fecha" class="form-control" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Equipo Local</label>
+                        <select class="form-select" name="home_team_id" required>
+                            {% for equipo in equipos %}
+                            <option value="{{ equipo.team_id }}">{{ equipo.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Equipo Visitante</label>
+                        <select class="form-select" name="away_team_id" required>
+                            {% for equipo in equipos %}
+                            <option value="{{ equipo.team_id }}">{{ equipo.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">Estadio</label>
+                        <select class="form-select" name="stadium_id" required>
+                            {% for estadio in estadios %}
+                            <option value="{{ estadio.stadium_id }}">{{ estadio.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-calendar-plus me-1"></i> Programar Partido
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Lista de partidos -->
+    <div class="card">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="card-title mb-0">Partidos Programados</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Fecha</th>
+                            <th>Local</th>
+                            <th>Visitante</th>
+                            <th>Estadio</th>
+                            <th>Resultado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for partido in partidos %}
+                        <tr>
+                            <td>{{ partido.match_id }}</td>
+                            <td>{{ partido.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                            <td>{{ partido.equipo_local }}</td>
+                            <td>{{ partido.equipo_visitante }}</td>
+                            <td>{{ partido.estadio }}</td>
+                            <td>{{ partido.resultado or '-' }}</td>
+                            <!-- Cambia esta parte en tu tabla de partidos -->
+                            <td>
+                                <a href="{{ url_for('editar_partido', match_id=partido.match_id) }}" 
+                                    class="btn btn-sm btn-primary me-1">
+                                        <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('eliminar_partido', match_id=partido.match_id) }}" 
+                                       method="POST" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" 
+                                            onclick="return confirm('¿Eliminar este partido?')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">No hay partidos programados</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Scripts específicos para la página de partidos
+    document.addEventListener('DOMContentLoaded', function() {
+        // Validación para evitar que un equipo juegue contra sí mismo
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            const local = form.querySelector('[name="home_team_id"]').value;
+            const visitante = form.querySelector('[name="away_team_id"]').value;
+            
+            if(local === visitante) {
+                e.preventDefault();
+                alert('Un equipo no puede jugar contra sí mismo');
+            }
+        });
+    });
+</script>
+{% endblock %}

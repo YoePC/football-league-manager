@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="bi bi-search me-2"></i> Consultas del Sistema</h2>
+    
+    <!-- Mensajes flash -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Consulta 1: Top 3 jugadores con más goles -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Top 3 Jugadores con más goles</h5>
+        </div>
+        <div class="card-body">
+            <button id="btnTopGoleadores" class="btn btn-primary mb-3">
+                <i class="bi bi-arrow-repeat me-1"></i> Ejecutar Consulta
+            </button>
+            <div id="resultTopGoleadores" class="table-responsive"></div>
+        </div>
+    </div>
+
+    <!-- Consulta 2: Partidos de un equipo -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="card-title mb-0">Partidos de un equipo</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <select id="selectEquipo" class="form-select mb-3">
+                        <option value="">Seleccione un equipo</option>
+                        {% for equipo in equipos %}
+                        <option value="{{ equipo.team_id }}">{{ equipo.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <button id="btnPartidosEquipo" class="btn btn-success" disabled>
+                        <i class="bi bi-search me-1"></i> Buscar Partidos
+                    </button>
+                </div>
+            </div>
+            <div id="resultPartidosEquipo" class="table-responsive mt-3"></div>
+        </div>
+    </div>
+
+    <!-- Consulta 3: Jugadores con goles en resultado específico -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="card-title mb-0">Jugadores con goles en partidos X-Y</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <select id="selectResultado" class="form-select mb-3">
+                        <option value="">Seleccione un resultado</option>
+                        {% for resultado in resultados %}
+                        <option value="{{ resultado.resultado }}">{{ resultado.resultado }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <button id="btnJugadoresResultado" class="btn btn-info" disabled>
+                        <i class="bi bi-search me-1"></i> Buscar Jugadores
+                    </button>
+                </div>
+            </div>
+            <div id="resultJugadoresResultado" class="table-responsive mt-3"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Consulta 1: Top 3 jugadores con más goles
+    $('#btnTopGoleadores').click(function() {
+        $.get('/consulta/top_jugadores_goles', function(data) {
+            if (data.resultado && data.resultado.length > 0) {
+                let tableHtml = `
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Jugador</th>
+                                <th>Goles</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                
+                data.resultado.forEach(jugador => {
+                    tableHtml += `
+                        <tr>
+                            <td>${jugador.nombre}</td>
+                            <td>${jugador.total_goles}</td>
+                        </tr>`;
+                });
+                
+                tableHtml += `</tbody></table>`;
+                $('#resultTopGoleadores').html(tableHtml);
+            } else {
+                $('#resultTopGoleadores').html('<p class="text-muted">No se encontraron resultados</p>');
+            }
+        }).fail(function() {
+            $('#resultTopGoleadores').html('<p class="text-danger">Error al ejecutar la consulta</p>');
+        });
+    });
+
+    // Consulta 2: Partidos de un equipo
+    $('#selectEquipo').change(function() {
+        $('#btnPartidosEquipo').prop('disabled', !$(this).val());
+    });
+
+    $('#btnPartidosEquipo').click(function() {
+        const teamId = $('#selectEquipo').val();
+        $.get(`/consulta/partidos_equipo_estadio/${teamId}`, function(data) {
+            if (data.resultado && data.resultado.length > 0) {
+                let tableHtml = `
+                    <h6>Equipo: <strong>${data.equipo}</strong></h6>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID Partido</th>
+                                <th>Estadio</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                
+                data.resultado.forEach(partido => {
+                    tableHtml += `
+                        <tr>
+                            <td>${partido.match_id}</td>
+                            <td>${partido.estadio}</td>
+                        </tr>`;
+                });
+                
+                tableHtml += `</tbody></table>`;
+                $('#resultPartidosEquipo').html(tableHtml);
+            } else {
+                $('#resultPartidosEquipo').html('<p class="text-muted">No se encontraron partidos para este equipo</p>');
+            }
+        }).fail(function() {
+            $('#resultPartidosEquipo').html('<p class="text-danger">Error al ejecutar la consulta</p>');
+        });
+    });
+
+    // Consulta 3: Jugadores con goles en resultado específico
+    $('#selectResultado').change(function() {
+        $('#btnJugadoresResultado').prop('disabled', !$(this).val());
+    });
+
+    $('#btnJugadoresResultado').click(function() {
+        const resultado = $('#selectResultado').val();
+        $.get(`/consulta/jugadores_goles_resultado/${resultado}`, function(data) {
+            if (data.resultado_busqueda && data.resultado_busqueda.length > 0) {
+                let tableHtml = `
+                    <h6>Resultado buscado: <strong>${data.parametro}</strong></h6>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Jugador</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                
+                data.resultado_busqueda.forEach(jugador => {
+                    tableHtml += `
+                        <tr>
+                            <td>${jugador.nombre}</td>
+                        </tr>`;
+                });
+                
+                tableHtml += `</tbody></table>`;
+                $('#resultJugadoresResultado').html(tableHtml);
+            } else {
+                $('#resultJugadoresResultado').html('<p class="text-muted">No se encontraron jugadores</p>');
+            }
+        }).fail(function() {
+            $('#resultJugadoresResultado').html('<p class="text-danger">Error al ejecutar la consulta</p>');
+        });
+    });
+});
+</script>
+{% endblock %}
